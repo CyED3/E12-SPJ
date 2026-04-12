@@ -67,8 +67,22 @@ def analyze_file(file_path: str, apply_fixes: bool = False) -> Dict:
     classification_result = classify_tokens_detailed(tokens)
     classification = classification_result["classification"]
 
-    transformed = transform_code(code)
-    changed = transformed != code
+    env_path = os.path.join(os.path.dirname(file_path), ".env")
+    trace = []
+    env_entries = {}
+
+    if classification == "Safe":
+        transformed = code
+        changed = False
+    else:
+        transformed, env_entries, trace = transform_code(
+            code=code,
+            classification=classification,
+            file_path=file_path,
+            env_path=env_path,
+        )
+        changed = transformed != code
+
     fixable = should_apply_fix(classification, changed)
     backup_path = None
 
@@ -112,6 +126,8 @@ def analyze_file(file_path: str, apply_fixes: bool = False) -> Dict:
         "findings_count": len(findings),
         "changed": changed,
         "fix_applied": backup_path is not None,
+        "trace": trace,
+        "env_entries": env_entries,
     }
 
 
