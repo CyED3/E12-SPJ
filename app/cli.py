@@ -72,8 +72,6 @@ def analyze_file(file_path: str, apply_fixes: bool = False) -> Dict:
     trace = []
     env_entries = {}
 
-    # IMPORTANT:
-    # Safe files do NOT enter the transformer.
     if classification == "Safe":
         transformed = code
         changed = False
@@ -97,7 +95,10 @@ def analyze_file(file_path: str, apply_fixes: bool = False) -> Dict:
         print("No issues found.")
     else:
         for finding in findings:
-            print(f"- {finding['type']}: {finding['match']}")
+            print(
+                f"- {finding['type']} | line={finding.get('line', '?')} | "
+                f"match={finding['match']}"
+            )
 
     print("\nTOKEN SEQUENCE:")
     print(classification_result["tokens"])
@@ -134,6 +135,17 @@ def analyze_file(file_path: str, apply_fixes: bool = False) -> Dict:
     elif apply_fixes and classification == "Safe":
         print("\nTransformation skipped because the file was classified as Safe.")
 
+    findings_df = build_findings_df(file_path, findings)
+    classification_df = build_classification_df(
+        file_path=file_path,
+        classification_result=classification_result,
+        findings_count=len(findings),
+        changed=changed,
+        fix_applied=backup_path is not None,
+    )
+    transformations_df = build_transformations_df(file_path, trace)
+    env_df = build_env_df(file_path, env_entries)
+
     return {
         "file": file_path,
         "classification": classification,
@@ -145,6 +157,10 @@ def analyze_file(file_path: str, apply_fixes: bool = False) -> Dict:
         "fix_applied": backup_path is not None,
         "trace": trace,
         "env_entries": env_entries,
+        "findings_df": findings_df,
+        "classification_df": classification_df,
+        "transformations_df": transformations_df,
+        "env_df": env_df,
     }
 
 
@@ -173,7 +189,107 @@ def analyze_directory(dir_path: str, apply_fixes: bool = False) -> List[Dict]:
             f"changed={result['changed']} | fix_applied={result['fix_applied']}"
         )
 
+    all_findings_df = pd.concat(
+        [r["findings_df"] for r in results if not r["findings_df"].empty],
+        ignore_index=True
+    ) if any(not r["findings_df"].empty for r in results) else pd.DataFrame()
+
+    all_classification_df = pd.concat(
+        [r["classification_df"] for r in results if not r["classification_df"].empty],
+        ignore_index=True
+    ) if any(not r["classification_df"].empty for r in results) else pd.DataFrame()
+
+    all_transformations_df = pd.concat(
+        [r["transformations_df"] for r in results if not r["transformations_df"].empty],
+        ignore_index=True
+    ) if any(not r["transformations_df"].empty for r in results) else pd.DataFrame()
+
+    all_env_df = pd.concat(
+        [r["env_df"] for r in results if not r["env_df"].empty],
+        ignore_index=True
+    ) if any(not r["env_df"].empty for r in results) else pd.DataFrame()
+
+    if not all_findings_df.empty:
+        all_findings_df.to_csv("findings_report.csv", index=False)
+
+    if not all_classification_df.empty:
+        all_classification_df.to_csv("classification_report.csv", index=False)
+
+    if not all_transformations_df.empty:
+        all_transformations_df.to_csv("transformations_report.csv", index=False)
+
+    if not all_env_df.empty:
+        all_env_df.to_csv("env_report.csv", index=False)
+
+    print("\nReports generated:")
+    print("- findings_report.csv")
+    print("- classification_report.csv")
+    print("- transformations_report.csv")
+    print("- env_report.csv")
+
     return results
+
+# Data frames
+
+def build_findings_df(file_path: str, findings: List[Dict]) -> pd.DataFrame:
+    rows = []
+    for finding in findings:
+        rows.append({
+            "file": file_path,
+            "type": finding["type"],
+            "match": finding["match"],
+            "start": finding["start"],
+            "end": finding["end"],
+            "line": finding["line"],
+            "column": finding["column"],
+            "secret_value": finding["secret_value"],
+            "severity": finding["severity"],
+        })
+    return pd.DataFrame(rows)
+
+
+def build_classification_df(
+    file_path: str,
+    classification_result: Dict,
+    findings_count: int,
+    changed: bool,
+    fix_applied: bool,
+) -> pd.DataFrame:
+    return pd.DataFrame([{
+        "file": file_path,
+        "classification": classification_result["classification"],
+        "accepted_by": classification_result["accepted_by"],
+        "final_state": classification_result["final_state"],
+        "tokens": ", ".join(classification_result["tokens"]),
+        "findings_count": findings_count,
+        "changed": changed,
+        "fix_applied": fix_applied,
+    }])
+
+
+def build_transformations_df(file_path: str, trace: List[Dict]) -> pd.DataFrame:
+    rows = []
+    for step in trace:
+        rows.append({
+            "file": file_path,
+            "line": step["line"],
+            "token": step["token"],
+            "action": step["action"],
+            "original": step["original"],
+            "transformed": step["transformed"],
+        })
+    return pd.DataFrame(rows)
+
+
+def build_env_df(file_path: str, env_entries: Dict[str, str]) -> pd.DataFrame:
+    rows = []
+    for key, value in env_entries.items():
+        rows.append({
+            "file": file_path,
+            "env_key": key,
+            "env_value": value,
+        })
+    return pd.DataFrame(rows)
 
 
 def main() -> None:
