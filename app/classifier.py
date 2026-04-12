@@ -76,7 +76,7 @@ def run_safe_dfa(tokens):
         else:
             current_state = next_state
 
-    return current_state.name == "safe_ok"
+    return current_state.value  == "safe_ok"
 
 
 # =========================================================
@@ -169,7 +169,7 @@ def run_needs_review_dfa(tokens):
         else:
             current_state = next_state
 
-    return current_state.name == "review_ok"
+    return current_state.value  == "review_ok"
 
 
 # =========================================================
@@ -249,7 +249,7 @@ def run_security_violation_dfa(tokens):
         else:
             current_state = next_state
 
-    return current_state.name == "violation_ok"
+    return current_state.value  == "violation_ok"
 
 
 # =========================================================

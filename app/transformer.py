@@ -315,7 +315,7 @@ def apply_action(line: str, action: str) -> Tuple[str, Dict[str, str]]:
 
 def transform_code(
     code: str,
-    classification: str,
+    classification: str = "Needs Review",
     file_path: Optional[str] = None,
     env_path: Optional[str] = None,
 ) -> Tuple[str, Dict[str, str], List[Dict[str, str]]]:

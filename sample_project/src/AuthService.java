@@ -1,6 +1,6 @@
 public class AuthService {
     public void login() {
-        String password = "admin123";
-        System.out.println(password);
+        String password = System.getenv("APP_PASSWORD");
+        // Sensitive output removed
     }
 }
