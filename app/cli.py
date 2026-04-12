@@ -3,9 +3,9 @@ import shutil
 import sys
 from typing import Dict, List
 
-from detector import detect_issues, extract_tokens
-from classifier import classify_tokens_detailed
-from transformer import transform_code
+from .detector import detect_issues, extract_tokens
+from .classifier import classify_tokens_detailed
+from .transformer import transform_code
 
 SUPPORTED_EXTENSIONS = {".java", ".cfg", ".conf", ".env", ".txt"}
 AUTO_FIX_CLASSES = {"Needs Review", "Security Violation"}
@@ -49,7 +49,7 @@ def should_apply_fix(classification: str, changed: bool) -> bool:
     return classification in AUTO_FIX_CLASSES and changed
 
 
-def write_backup_and_fix(file_path: str, original: str, transformed: str) -> str:
+def write_backup_and_fix(file_path: str, transformed: str) -> str:
     backup_path = file_path + ".bak"
     shutil.copyfile(file_path, backup_path)
     with open(file_path, "w", encoding="utf-8") as output_file:
@@ -71,6 +71,8 @@ def analyze_file(file_path: str, apply_fixes: bool = False) -> Dict:
     trace = []
     env_entries = {}
 
+    # IMPORTANT:
+    # Safe files do NOT enter the transformer.
     if classification == "Safe":
         transformed = code
         changed = False
@@ -100,9 +102,18 @@ def analyze_file(file_path: str, apply_fixes: bool = False) -> Dict:
     print(classification_result["tokens"])
 
     print("\nCLASSIFICATION:")
-    print(classification_result["classification"])
+    print(classification)
     print(f"Accepted by: {classification_result['accepted_by']}")
     print(f"Final state: {classification_result['final_state']}")
+
+    print("\nTRANSFORMATION TRACE:")
+    if not trace:
+        print("No transducer execution needed.")
+    else:
+        for step in trace:
+            print(
+                f"Line {step['line']} | token={step['token']} -> action={step['action']}"
+            )
 
     print("\nTRANSFORMATION STATUS:")
     if changed:
@@ -110,16 +121,21 @@ def analyze_file(file_path: str, apply_fixes: bool = False) -> Dict:
     else:
         print("No transformation needed.")
 
+    if env_entries:
+        print("\nENV ENTRIES:")
+        for key, value in env_entries.items():
+            print(f"- {key}={value}")
+
     if apply_fixes and fixable:
-        backup_path = write_backup_and_fix(file_path, code, transformed)
-        print(f"Changes applied to: {file_path}")
+        backup_path = write_backup_and_fix(file_path, transformed)
+        print(f"\nChanges applied to: {file_path}")
         print(f"Backup created at: {backup_path}")
-    elif apply_fixes and changed and not fixable:
-        print("Transformation skipped because the file was classified as Safe.")
+    elif apply_fixes and classification == "Safe":
+        print("\nTransformation skipped because the file was classified as Safe.")
 
     return {
         "file": file_path,
-        "classification": classification_result["classification"],
+        "classification": classification,
         "accepted_by": classification_result["accepted_by"],
         "final_state": classification_result["final_state"],
         "tokens": classification_result["tokens"],
@@ -160,7 +176,7 @@ def analyze_directory(dir_path: str, apply_fixes: bool = False) -> List[Dict]:
 
 
 def main() -> None:
-    base_dir = os.path.dirname(os.path.dirname(_file_))
+    base_dir = os.path.dirname(os.path.dirname(__file__))
 
     try:
         input_path = resolve_input_path(base_dir)
@@ -177,5 +193,5 @@ def main() -> None:
         print(f"\nError: {exc}")
 
 
-if _name_ == "_main_":
+if __name__ == "__main__":
     main()

@@ -3,7 +3,7 @@ import re
 from typing import Dict, List, Optional, Tuple
 
 from pyformlang.fst import FST
-from detector import classify_line
+from .detector import classify_line
 
 
 # =========================================================
