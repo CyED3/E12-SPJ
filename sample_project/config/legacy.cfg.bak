@@ -1,0 +1,2 @@
+db.password="legacy-pass"
+public.endpoint=http://staging.example.local
