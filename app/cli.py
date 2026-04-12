@@ -6,6 +6,7 @@ from typing import Dict, List
 from .detector import detect_issues, extract_tokens
 from .classifier import classify_tokens_detailed
 from .transformer import transform_code
+import pandas as pd
 
 SUPPORTED_EXTENSIONS = {".java", ".cfg", ".conf", ".env", ".txt"}
 AUTO_FIX_CLASSES = {"Needs Review", "Security Violation"}

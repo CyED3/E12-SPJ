@@ -12,20 +12,46 @@ PATTERNS = {
 
 }
 
+def _line_and_column_from_index(text: str, index: int) -> tuple[int, int]:
+    line = text.count("\n", 0, index) + 1
+    last_newline = text.rfind("\n", 0, index)
+    column = index + 1 if last_newline == -1 else index - last_newline
+    return line, column
+
+
+def _severity_for(label: str) -> str:
+    if label in {"AWS_API_KEY", "PRINT_SENSITIVE"}:
+        return "high"
+    if label in {"API_KEY", "HARDCODED_PASSWORD"}:
+        return "medium"
+    return "low"
+
+
 def detect_issues(code: str) -> List[dict]:
     findings = []
 
     for label, pattern in PATTERNS.items():
-        flags = re.MULTILINE
         for match in re.finditer(pattern, code, flags=re.MULTILINE):
+            start = match.start()
+            end = match.end()
+            line, column = _line_and_column_from_index(code, start)
+
+            secret_value = None
+            if "secret" in match.re.groupindex:
+                secret_value = match.group("secret")
+
             findings.append({
                 "type": label,
                 "match": match.group(0),
-                "start": match.start(),
-                "end": match.end()
+                "start": start,
+                "end": end,
+                "line": line,
+                "column": column,
+                "secret_value": secret_value,
+                "severity": _severity_for(label),
             })
 
-    findings.sort(key=lambda x: x["start"])
+    findings.sort(key=lambda x: (x["line"], x["start"]))
     return findings
 
 def extract_tokens(code: str) -> List[str]:
