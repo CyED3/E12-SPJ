@@ -1,2 +1,2 @@
 TODO: migrate away from internal endpoints
-Reference URL: ${APP_BASE_URL}
+Reference URL: http://dev.myservice.local/docs
