@@ -1,8 +1,0 @@
-file,classification,accepted_by,final_state,tokens,findings_count,changed,fix_applied
-C:\Users\Pauli\OneDrive\Escritorio\Uni\Semestre_6\DiscretasIII\E12-SPJ\sample_project\README.txt,Needs Review,NeedsReviewClassifier,review_ok,SUSPICIOUS_URL,1,True,True
-C:\Users\Pauli\OneDrive\Escritorio\Uni\Semestre_6\DiscretasIII\E12-SPJ\sample_project\config\application.conf,Needs Review,NeedsReviewClassifier,review_ok,"SUSPICIOUS_URL, INTERNAL_IP",2,True,True
-C:\Users\Pauli\OneDrive\Escritorio\Uni\Semestre_6\DiscretasIII\E12-SPJ\sample_project\config\legacy.cfg,Needs Review,NeedsReviewClassifier,review_ok,"HARDCODED_PASSWORD, SUSPICIOUS_URL",2,True,True
-C:\Users\Pauli\OneDrive\Escritorio\Uni\Semestre_6\DiscretasIII\E12-SPJ\sample_project\src\AuthService.java,Security Violation,SecurityViolationClassifier,violation_ok,"HARDCODED_PASSWORD, PRINT_SENSITIVE",2,True,True
-C:\Users\Pauli\OneDrive\Escritorio\Uni\Semestre_6\DiscretasIII\E12-SPJ\sample_project\src\AwsClient.java,Security Violation,SecurityViolationClassifier,violation_ok,AWS_API_KEY,1,True,True
-C:\Users\Pauli\OneDrive\Escritorio\Uni\Semestre_6\DiscretasIII\E12-SPJ\sample_project\src\ConfigLoader.java,Needs Review,NeedsReviewClassifier,review_ok,"API_KEY, TODO_COMMENT",2,True,True
-C:\Users\Pauli\OneDrive\Escritorio\Uni\Semestre_6\DiscretasIII\E12-SPJ\sample_project\src\Main.java,Safe,SafeClassifier,safe_ok,,0,False,False

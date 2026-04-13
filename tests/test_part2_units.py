@@ -8,7 +8,7 @@ from tests.cfg_validation import lint_secure_config, secure_config_ok
 from app.classifier import classify_tokens, classify_tokens_detailed, run_safe_dfa, run_security_violation_dfa
 from app.detector import classify_line, detect_issues, extract_tokens
 from app.transformer import build_secret_fst, token_to_action, transform_code
-
+from app.config_validator import validate_config_text
 
 # --- regex / extraction ---
 
@@ -145,3 +145,22 @@ section app {
 }
 """
     assert secure_config_ok(cfg)
+
+def test_dotted_key_is_accepted():
+    text = 'service.url=${APP_BASE_URL}'
+    result = validate_config_text(text)
+    assert result["parsed_ok"] is True
+
+def test_sensitive_key_with_plaintext_is_rejected():
+    text = """
+app {
+    credentials {
+        DB_PASSWORD = "admin123"
+    }
+}
+""".strip()
+
+    result = validate_config_text(text)
+    assert result["parsed_ok"] is True
+    assert result["secure_ok"] is False
+    assert len(result["errors"]) >= 1

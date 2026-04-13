@@ -1,5 +1,5 @@
 import os
-from typing import Dict, List, Any
+from typing import Any, Dict, List
 
 import pandas as pd
 from textx import metamodel_from_file
@@ -7,6 +7,22 @@ from textx.exceptions import TextXSyntaxError
 
 
 SUPPORTED_CONFIG_EXTENSIONS = {".cfg", ".conf", ".secure", ".chomsky"}
+
+SENSITIVE_KEYS = {
+    "DB_PASSWORD",
+    "API_KEY",
+    "SECRET_KEY",
+    "AWS_ACCESS_KEY_ID",
+    "APP_PASSWORD",
+    "APP_API_KEY",
+    "APP_BASE_URL",
+    "PASSWORD",
+    "SECRET",
+    "TOKEN",
+    "password",
+    "api_key",
+    "secret_key",
+}
 
 
 def _grammar_path() -> str:
@@ -37,6 +53,16 @@ def _walk_elements(elements, depth: int = 0):
             yield ("Assignment", element, depth)
 
 
+def _key_to_str(key_obj) -> str:
+    if isinstance(key_obj, str):
+        return key_obj
+
+    if hasattr(key_obj, "parts"):
+        return ".".join(key_obj.parts)
+
+    return str(key_obj)
+
+
 def _assignment_value_repr(assignment) -> str:
     value = assignment.value
     cls_name = value.__class__.__name__
@@ -44,7 +70,7 @@ def _assignment_value_repr(assignment) -> str:
     if cls_name == "EnvReference":
         return "${" + value.ref + "}"
 
-    # textX usually returns primitive values directly for STRING / INT / BOOL
+    # STRING and INT may come as primitive text-like values
     return str(value)
 
 
@@ -88,7 +114,9 @@ def validate_config_text(text: str, source_name: str = "<memory>") -> Dict[str, 
     for kind, obj, depth in _walk_elements(model.elements):
         if kind == "Section":
             nested_sections = max(nested_sections, depth + 1)
-            if not obj.name:
+
+            section_name = _key_to_str(obj.name)
+            if not section_name:
                 errors.append("A section without a name was found.")
 
         elif kind == "Assignment":
@@ -98,6 +126,7 @@ def validate_config_text(text: str, source_name: str = "<memory>") -> Dict[str, 
             if cls_name == "SensitiveAssignment":
                 sensitive_assignments += 1
                 value_cls = obj.value.__class__.__name__
+
                 if value_cls != "EnvReference":
                     errors.append(
                         f"Sensitive key '{obj.key}' must use an environment reference."
@@ -109,16 +138,22 @@ def validate_config_text(text: str, source_name: str = "<memory>") -> Dict[str, 
                     )
 
             elif cls_name == "RegularAssignment":
+                key_name = _key_to_str(obj.key)
                 value_text = _assignment_value_repr(obj)
 
-                # Warning only: regular keys may still use literals
-                if obj.key.lower().endswith(("password", "secret", "token")):
+                # If a sensitive key appears as a regular assignment, it is insecure.
+                if key_name.upper() in SENSITIVE_KEYS:
+                    errors.append(
+                        f"Sensitive key '{key_name}' must use an environment reference."
+                    )
+
+                elif key_name.lower().endswith(("password", "secret", "token", "apikey", "api_key")):
                     warnings.append(
-                        f"Regular key '{obj.key}' looks sensitive but is not declared as SensitiveKey."
+                        f"Key '{key_name}' looks sensitive but is not explicitly listed as sensitive."
                     )
 
                 if value_text == "":
-                    warnings.append(f"Regular key '{obj.key}' has an empty value.")
+                    warnings.append(f"Key '{key_name}' has an empty value.")
 
     secure_ok = len(errors) == 0
 

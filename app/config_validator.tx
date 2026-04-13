@@ -7,7 +7,7 @@ Element:
 ;
 
 Section:
-    name=ID '{' elements*=Element '}'
+    name=Key '{' elements*=Element '}'
 ;
 
 Assignment:
@@ -19,7 +19,11 @@ SensitiveAssignment:
 ;
 
 RegularAssignment:
-    key=ID '=' value=Value
+    key=Key '=' value=Value
+;
+
+Key:
+    parts+=ID['.']
 ;
 
 SensitiveKey:
@@ -33,9 +37,17 @@ SensitiveKey:
 ;
 
 Value:
-    STRING | INT | BOOL | EnvReference
+    STRING | INT | Boolean | EnvReference | BareWord
 ;
 
 EnvReference:
     '${' ref=ID '}'
+;
+
+Boolean:
+    'true' | 'false'
+;
+
+BareWord:
+    /[A-Za-z0-9_:\/\.-]+/
 ;

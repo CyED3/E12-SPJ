@@ -1,119 +1,53 @@
-# 4. Context-free grammar for “secure” configuration
 
-## What this section is for
+# 4. Context-Free Grammar for Secure Configuration Validation
 
-Think of a small language for `.env`-style files or configs with sections: assignments must be well formed, blocks may nest, and sensitive keys must **not** use a plain value like `admin123`; they should use something like `${MY_VAR}`.
+## Objective
 
-You cannot fully capture **nested braces** and “they must match” with regex alone at arbitrary depth, which is why the assignment asks for a **CFG**. Here we spell out the grammar and the non-regularity argument.
+This grammar defines a small secure configuration language for the structural validation phase of the project. It supports:
 
----
+- well-formed key-value assignments,
+- hierarchical sections,
+- recursive nesting,
+- balanced braces,
+- and secure references to environment variables.
 
-## Terminals and non-terminals
-
-**Terminals** (idealized tokens from a lexer):
-
-| Symbol | Meaning |
-|--------|---------|
-| `LBRACE`, `RBRACE` | `{` and `}` |
-| `ID` | section or key name |
-| `=` | assignment |
-| `STRING`, `NUMBER` | literals |
-| (env reference) | pattern `${` + `ID` + `}` |
-
-**Non-terminals:** `Config`, `Section`, `Block`, `Entry`, `Key`, `Value`, `PlainValue`.  
-**Start symbol:** `Config`.
+The grammar validates the **structure** of configuration files, while the validator enforces the policy that sensitive keys must use environment variable references.
 
 ---
 
-## Rules (EBNF-style)
+## Formal grammar definition
 
-```text
-Config     ::= Block*
-Block      ::= Section | Entry
+We define the grammar as:
 
-Section    ::= 'section' ID '{' Config '}'
-           |   '{' Config '}'
-
-Entry      ::= Key '=' Value
-
-Key        ::= ID
-Value      ::= EnvRef | PlainValue
-PlainValue ::= STRING | NUMBER
-EnvRef     ::= '${' ID '}'
-
-SensitiveKey ::= 'DB_PASSWORD' | 'API_KEY' | 'AWS_SECRET' | 'PASSWORD' | 'SECRET'
-```
-
-In a real validator, if `Key` is in **SensitiveKey**, then `Value` must be **only** `EnvRef`. Other keys might allow literals or references depending on policy.
+G = (V, $\Sigma$, P, S)
 
 ---
-
-## Examples
-
-**Good** (secret via environment):
-
-```text
-DB_PASSWORD=${SECURE_DB_PASSWORD}
-```
-
-**Bad** under a strict policy (plaintext secret):
-
-```text
-DB_PASSWORD=admin123
-```
-
-**Nested** (shows recursion `Config` inside `Section`):
-
-```text
-section app {
-  section db {
-    DB_PASSWORD=${SECURE_DB_PASSWORD}
-  }
-}
-```
-
----
-
-## Why this is not a regular language
-
-1. **Balanced braces:** counting “how many opens vs closes” at unbounded nesting depth is the standard example of something a finite automaton cannot do with finite states alone (you need stack-style memory).
-
-2. **Recursion:** inside a section you again have `Config`, which may contain more sections. That is typical **tree-shaped** CFG structure.
-
-Regex is still fine for **line-level hints** (“this looks like a password”), but saying “this file respects hierarchy and secret policy” calls for a grammar-based parser (courses often show **textX**; here we keep the formal design; the current `app/` code focuses on Java + regex + DFA + FST).
-
----
-
-## How this ties to the repository
-
-`app/` wires **regex → DFA → FST** for the supported file types. This grammar is the design for the **structural validation** step from the integrative task; a textX `.tx` file would be the polished implementation with clear parse errors.
-
-For how detection and automata connect to the code, see [01_regex_doc.md](01_regex_doc.md), [02_automata.md](02_automata.md), and [03_transducer.md](03_transducer.md).
-
-
 
 ## Non-terminals
 
+
 V = {
-Config, Entry, Section, Assignment, Key, Value, EnvReference, Number, Boolean, BareWord
+Config, Element, Section, Assignment, SensitiveAssignment, RegularAssignment, Key, SensitiveKey, Value, EnvReference, Boolean, BareWord
 }
+
 
 ---
 
 ## Terminals
 
-$\Sigma$ = { ID, STRING, INT, '{', '}', '=', '.', '${', 'true', 'false' }
-
+$\Sigma$ = {
+ID, STRING, INT, '{', '}', '=', '.', '${', 'true', 'false'
+}
 Descriptions:
 
 - `ID` = identifier  
-- `STRING` = quoted string  
-- `INT` = integer  
+- `STRING` = quoted string literal  
+- `INT` = integer literal  
 - `{`, `}` = block delimiters  
 - `=` = assignment operator  
-- `.` = key separator  
-- `${` `}` = environment reference delimiters  
-- `true`, `false` = boolean values  
+- `.` = key separator for compound keys  
+- `${` and `}` = environment reference delimiters  
+- `true`, `false` = boolean literals  
 
 ---
 
@@ -126,22 +60,134 @@ S = Config
 ## Production rules (EBNF)
 
 ```ebnf
-Config       ::= Element
+Config              ::= Element*
 
-Element       ::= Section | Assignment
+Element             ::= Section | Assignment
 
-Section      ::= Key "{" Element "}"
+Section             ::= Key "{" Element* "}"
 
-Assignment   ::= Key "=" Value
+Assignment          ::= SensitiveAssignment | RegularAssignment
 
-Key          ::= ID ("." ID)*
+SensitiveAssignment ::= SensitiveKey "=" EnvReference
 
-Value        ::= EnvReference | STRING | Number | Boolean | BareWord
+RegularAssignment   ::= Key "=" Value
 
-EnvReference ::= "${" ID "}"
+Key                 ::= ID ("." ID)*
 
-Number       ::= ["-"] INT ["." INT]
+SensitiveKey        ::= "DB_PASSWORD"
+                      | "API_KEY"
+                      | "SECRET_KEY"
+                      | "AWS_ACCESS_KEY_ID"
+                      | "APP_PASSWORD"
+                      | "APP_API_KEY"
+                      | "APP_BASE_URL"
 
-Boolean      ::= "true" | "false"
+Value               ::= STRING | INT | Boolean | EnvReference | BareWord
 
-BareWord     ::= letter_or_digit_or_symbol+
+EnvReference        ::= "${" ID "}"
+
+Boolean             ::= "true" | "false"
+
+BareWord            ::= letter_or_digit_or_symbol+
+````
+
+---
+
+## Examples
+
+### Valid secure assignments
+
+```text
+DB_PASSWORD=${APP_PASSWORD}
+API_KEY=${APP_API_KEY}
+APP_BASE_URL=${APP_BASE_URL}
+```
+
+### Invalid insecure assignments
+
+```text
+DB_PASSWORD=admin123
+API_KEY="local-dev-key"
+APP_BASE_URL=http://internal.company.local/api
+```
+
+### Valid nested configuration
+
+```text
+app {
+    database {
+        credentials {
+            DB_PASSWORD=${APP_PASSWORD}
+        }
+    }
+}
+```
+
+### Valid dotted keys
+
+```text
+service.url=${APP_BASE_URL}
+security.api.enabled=true
+```
+
+---
+
+## Why this language is not regular
+
+This language is **not regular** because it allows **arbitrarily nested sections with balanced braces**.
+
+For example:
+
+```text
+app {
+    database {
+        credentials {
+            DB_PASSWORD=${APP_PASSWORD}
+        }
+    }
+}
+```
+
+To recognize whether every opening brace `{` has a matching closing brace `}` at arbitrary depth, the parser must keep track of nested structure. A finite automaton cannot do this in the general case because it has only finite memory and no stack.
+
+Balanced delimiters are a classical example of a non-regular language.
+
+---
+
+## Why a context-free grammar is required
+
+A context-free grammar is required because:
+
+1. **Recursive nesting**
+
+   * A `Section` contains `Element*`
+   * Each `Element` may again be a `Section`
+   * This creates recursive hierarchical structure
+
+2. **Balanced braces**
+
+   * The grammar must enforce properly matched `{` and `}`
+   * This cannot be done by regex or DFA for arbitrary depth
+
+3. **Hierarchical syntax**
+
+   * The language is tree-structured rather than flat
+   * CFGs are the appropriate formal model for such syntax
+
+Therefore, a CFG is necessary for the structural validation phase of the secure configuration language.
+
+---
+
+## Relation to the implementation
+
+This grammar is implemented using **textX** and used to validate configuration files after the previous stages of the pipeline:
+
+```text
+Detection (Regex)
+→ Classification (DFA)
+→ Transformation (FST)
+→ Validation (CFG with textX)
+```
+
+The CFG ensures that transformed configuration files remain structurally valid and conform to the secure configuration language.
+
