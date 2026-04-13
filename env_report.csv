@@ -1,0 +1,7 @@
+file,env_key,env_value
+C:\Users\Pauli\OneDrive\Escritorio\Uni\Semestre_6\DiscretasIII\E12-SPJ\sample_project\README.txt,APP_BASE_URL,http://dev.myservice.local/docs
+C:\Users\Pauli\OneDrive\Escritorio\Uni\Semestre_6\DiscretasIII\E12-SPJ\sample_project\config\application.conf,APP_BASE_URL,http://internal.company.local/api
+C:\Users\Pauli\OneDrive\Escritorio\Uni\Semestre_6\DiscretasIII\E12-SPJ\sample_project\config\legacy.cfg,APP_BASE_URL,http://staging.example.local
+C:\Users\Pauli\OneDrive\Escritorio\Uni\Semestre_6\DiscretasIII\E12-SPJ\sample_project\src\AuthService.java,APP_PASSWORD,admin123
+C:\Users\Pauli\OneDrive\Escritorio\Uni\Semestre_6\DiscretasIII\E12-SPJ\sample_project\src\AwsClient.java,AWS_ACCESS_KEY_ID,AKIA1234567890ABCDEF
+C:\Users\Pauli\OneDrive\Escritorio\Uni\Semestre_6\DiscretasIII\E12-SPJ\sample_project\src\ConfigLoader.java,APP_API_KEY,local-dev-key

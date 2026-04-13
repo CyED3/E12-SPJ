@@ -1,6 +1,6 @@
 public class ConfigLoader {
     public void load() {
-        String api_key = System.getenv("APP_API_KEY");
-
+        String api_key = "local-dev-key";
+        // TODO remove before production
     }
 }

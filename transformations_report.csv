@@ -1,0 +1,11 @@
+file,line,token,action,original,transformed
+C:\Users\Pauli\OneDrive\Escritorio\Uni\Semestre_6\DiscretasIII\E12-SPJ\sample_project\README.txt,2,SUSPICIOUS_URL,ENV_URL,Reference URL: http://dev.myservice.local/docs,Reference URL: ${APP_BASE_URL}
+C:\Users\Pauli\OneDrive\Escritorio\Uni\Semestre_6\DiscretasIII\E12-SPJ\sample_project\config\application.conf,1,SUSPICIOUS_URL,ENV_URL,service.url=http://internal.company.local/api,service.url=${APP_BASE_URL}
+C:\Users\Pauli\OneDrive\Escritorio\Uni\Semestre_6\DiscretasIII\E12-SPJ\sample_project\config\application.conf,2,INTERNAL_IP,REDACT_IP,support.ip=192.168.1.25,support.ip=REDACTED_INTERNAL_IP
+C:\Users\Pauli\OneDrive\Escritorio\Uni\Semestre_6\DiscretasIII\E12-SPJ\sample_project\config\legacy.cfg,1,HARDCODED_PASSWORD,ENV_PASSWORD,"db.password=""legacy-pass""","db.password=""legacy-pass"""
+C:\Users\Pauli\OneDrive\Escritorio\Uni\Semestre_6\DiscretasIII\E12-SPJ\sample_project\config\legacy.cfg,2,SUSPICIOUS_URL,ENV_URL,public.endpoint=http://staging.example.local,public.endpoint=${APP_BASE_URL}
+C:\Users\Pauli\OneDrive\Escritorio\Uni\Semestre_6\DiscretasIII\E12-SPJ\sample_project\src\AuthService.java,3,HARDCODED_PASSWORD,ENV_PASSWORD,"        String password = ""admin123"";","        String password = System.getenv(""APP_PASSWORD"");"
+C:\Users\Pauli\OneDrive\Escritorio\Uni\Semestre_6\DiscretasIII\E12-SPJ\sample_project\src\AuthService.java,4,PRINT_SENSITIVE,REMOVE_SENSITIVE_PRINT,        System.out.println(password);,        // Sensitive output removed
+C:\Users\Pauli\OneDrive\Escritorio\Uni\Semestre_6\DiscretasIII\E12-SPJ\sample_project\src\AwsClient.java,3,AWS_API_KEY,ENV_AWS_KEY,"        String awsAccessKey = ""AKIA1234567890ABCDEF"";","        AWS_ACCESS_KEY_ID = System.getenv(""AWS_ACCESS_KEY_ID"");"
+C:\Users\Pauli\OneDrive\Escritorio\Uni\Semestre_6\DiscretasIII\E12-SPJ\sample_project\src\ConfigLoader.java,3,API_KEY,ENV_API_KEY,"        String api_key = ""local-dev-key"";","        String api_key = System.getenv(""APP_API_KEY"");"
+C:\Users\Pauli\OneDrive\Escritorio\Uni\Semestre_6\DiscretasIII\E12-SPJ\sample_project\src\ConfigLoader.java,4,TODO_COMMENT,DELETE_LINE,        // TODO remove before production,

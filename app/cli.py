@@ -6,6 +6,7 @@ from typing import Dict, List
 from .detector import detect_issues, extract_tokens
 from .classifier import classify_tokens_detailed
 from .transformer import transform_code
+from .config_validator import validate_config_file, is_supported_config_file
 import pandas as pd
 
 SUPPORTED_EXTENSIONS = {".java", ".cfg", ".conf", ".env", ".txt"}
@@ -87,6 +88,10 @@ def analyze_file(file_path: str, apply_fixes: bool = False) -> Dict:
     fixable = should_apply_fix(classification, changed)
     backup_path = None
 
+    validation_result = None
+    if is_supported_config_file(file_path):
+        validation_result = validate_config_file(file_path)
+
     print("\n" + "=" * 70)
     print(f"ANALYZED FILE: {file_path}")
 
@@ -135,6 +140,18 @@ def analyze_file(file_path: str, apply_fixes: bool = False) -> Dict:
     elif apply_fixes and classification == "Safe":
         print("\nTransformation skipped because the file was classified as Safe.")
 
+    print("\nVALIDATION STATUS:")
+    if validation_result is None:
+        print("CFG validation not applicable to this file type.")
+    else:
+        print(f"Parsed OK: {validation_result['parsed_ok']}")
+        print(f"Secure OK: {validation_result['secure_ok']}")
+        print(f"Nested sections: {validation_result['nested_sections']}")
+        if validation_result["errors"]:
+            print("Errors:")
+            for err in validation_result["errors"]:
+                print(f"- {err}")
+
     findings_df = build_findings_df(file_path, findings)
     classification_df = build_classification_df(
         file_path=file_path,
@@ -161,6 +178,7 @@ def analyze_file(file_path: str, apply_fixes: bool = False) -> Dict:
         "classification_df": classification_df,
         "transformations_df": transformations_df,
         "env_df": env_df,
+        "validation": validation_result,
     }
 
 

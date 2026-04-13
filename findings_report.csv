@@ -1,0 +1,11 @@
+file,type,match,start,end,line,column,secret_value,severity
+C:\Users\Pauli\OneDrive\Escritorio\Uni\Semestre_6\DiscretasIII\E12-SPJ\sample_project\README.txt,SUSPICIOUS_URL,http://dev.myservice.local/docs,58,89,2,16,,low
+C:\Users\Pauli\OneDrive\Escritorio\Uni\Semestre_6\DiscretasIII\E12-SPJ\sample_project\config\application.conf,SUSPICIOUS_URL,http://internal.company.local/api,12,45,1,13,,low
+C:\Users\Pauli\OneDrive\Escritorio\Uni\Semestre_6\DiscretasIII\E12-SPJ\sample_project\config\application.conf,INTERNAL_IP,192.168.1.25,57,69,2,12,,low
+C:\Users\Pauli\OneDrive\Escritorio\Uni\Semestre_6\DiscretasIII\E12-SPJ\sample_project\config\legacy.cfg,HARDCODED_PASSWORD,"password=""legacy-pass""",3,25,1,4,,medium
+C:\Users\Pauli\OneDrive\Escritorio\Uni\Semestre_6\DiscretasIII\E12-SPJ\sample_project\config\legacy.cfg,SUSPICIOUS_URL,http://staging.example.local,42,70,2,17,,low
+C:\Users\Pauli\OneDrive\Escritorio\Uni\Semestre_6\DiscretasIII\E12-SPJ\sample_project\src\AuthService.java,HARDCODED_PASSWORD,"String password = ""admin123""",61,89,3,9,,medium
+C:\Users\Pauli\OneDrive\Escritorio\Uni\Semestre_6\DiscretasIII\E12-SPJ\sample_project\src\AuthService.java,PRINT_SENSITIVE,        System.out.println(password);,91,128,4,1,,high
+C:\Users\Pauli\OneDrive\Escritorio\Uni\Semestre_6\DiscretasIII\E12-SPJ\sample_project\src\AwsClient.java,AWS_API_KEY,AKIA1234567890ABCDEF,84,104,3,32,,high
+C:\Users\Pauli\OneDrive\Escritorio\Uni\Semestre_6\DiscretasIII\E12-SPJ\sample_project\src\ConfigLoader.java,API_KEY,"String api_key = ""local-dev-key""",61,93,3,9,,medium
+C:\Users\Pauli\OneDrive\Escritorio\Uni\Semestre_6\DiscretasIII\E12-SPJ\sample_project\src\ConfigLoader.java,TODO_COMMENT,// TODO remove before production,103,135,4,9,,low
