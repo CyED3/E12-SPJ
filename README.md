@@ -82,15 +82,14 @@ python -m app.cli sample_project
 
 ---
 
-## Tests (PDF “Testing and Validation” — part 1 only for now)
+## Tests (PDF “Testing and Validation”)
 
 ```bash
 python -m pytest tests -q
 ```
 
-**Part 1 (this commit):** scenario tests in `tests/test_part1_scenarios.py` — insecure code, safe code, config-like snippets, and mixed cases, plus the older `test_detector.py` / `test_detector_extra.py`.
-
-**Part 2** (unit tests for regex, DFA, FST, and CFG validation) can be added in a follow-up commit when you want it.
+- **Part 1 — scenarios:** `tests/test_part1_scenarios.py` (insecure / safe / config-like / mixed), plus `test_detector.py` and `test_detector_extra.py`.  
+- **Part 2 — units:** `tests/test_part2_units.py` (regex extraction, DFA classification, FST transforms, `app/cfg_validation.py` for CFG-style config lint).
 
 ---
 
