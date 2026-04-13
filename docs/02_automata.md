@@ -1,87 +1,81 @@
-# 2. Security Classification (Finite Automata)
+# 2. Clasificación con autómatas finitos (DFA)
 
-## Objective
-Classify files into:
-- Safe
-- Needs Review
-- Security Violation
+## Intuición
 
-The input is a sequence of tokens from the detection phase.
+Ya tenemos una **secuencia de tokens** (no el texto crudo). Ahora queremos etiquetar el archivo en tres cajones:
+
+- **Safe** — no hay señales fuertes de riesgo.  
+- **Needs Review** — hay cosas raras, pero no armamos el combo “gravísimo”.  
+- **Security Violation** — por ejemplo secreto + print, o ciertos tokens que el enunciado trata como violación directa.
+
+Cada categoría la modelamos con un **DFA** distinto en `pyformlang`; al final el programa decide cuál aplica según las reglas que programamos.
 
 ---
 
-## Alphabet
+## Alfabeto de tokens
 
 Σ = {
- API_KEY, HARDCODED_PASSWORD, PRINT_SENSITIVE,
- TODO_COMMENT, SUSPICIOUS_URL, AWS_API_KEY,
- INTERNAL_IP, OTHER
+ `API_KEY`, `HARDCODED_PASSWORD`, `PRINT_SENSITIVE`,
+ `TODO_COMMENT`, `SUSPICIOUS_URL`, `AWS_API_KEY`,
+ `INTERNAL_IP`, `OTHER`
 }
 
 ---
 
-## DFA 1: SafeClassifier
+## DFA 1: “¿Es safe de verdad?”
 
-Type: Deterministic Finite Automaton (DFA)
+**Tipo:** DFA (determinista).
 
-5-tuple:
+**5-tupla (resumida):**
 
-Q = {safe_start, safe_ok, safe_reject}  
-Σ = as defined above  
-q0 = safe_start  
-F = {safe_ok}  
+- Q = {`safe_start`, `safe_ok`, `safe_reject`}  
+- Σ = el alfabeto de arriba  
+- q₀ = `safe_start`  
+- F = {`safe_ok`}  
 
-Transition function δ:
-- δ(safe_start, OTHER) = safe_ok
-- δ(safe_start, x≠OTHER) = safe_reject
-- δ(safe_ok, OTHER) = safe_ok
-- δ(safe_ok, x≠OTHER) = safe_reject
-- δ(safe_reject, x) = safe_reject
+**δ en palabras:** desde el inicio, si solo ves `OTHER` llegás a “ok”. Apenas aparece **cualquier** token “picante”, vas a rechazo y te quedás ahí. Es el autómata del perfeccionista: una sola mancha y no es safe.
 
 ---
 
-## DFA 2: NeedsReviewClassifier
+## DFA 2: “¿Va a revisión humana?”
 
-Q = {review_start, review_ok, review_reject}  
-q0 = review_start  
-F = {review_ok}  
+Q = {`review_start`, `review_ok`, `review_reject`}  
+q₀ = `review_start`  
+F = {`review_ok`}  
 
-Accepts files with:
-- suspicious patterns
-- but no confirmed violations
+**Idea:** acepta cosas sospechosas o incompletas **sin** llegar al peor caso que modelamos en el tercer DFA (por ejemplo ciertos combos con print + secreto, o AWS key según las reglas).
 
 ---
 
-## DFA 3: SecurityViolationClassifier
+## DFA 3: “¿Esto ya es violación?”
 
 Q = {
-  violation_start,
-  violation_secret_seen,
-  violation_ok,
-  violation_no
+  `violation_start`,
+  `violation_secret_seen`,
+  `violation_ok`,
+  `violation_no`
 }
 
-q0 = violation_start  
-F = {violation_ok}  
+q₀ = `violation_start`  
+F = {`violation_ok`}  
 
-Key transitions:
-- password/api → secret_seen
-- secret_seen + print → violation
-- AWS_API_KEY → violation
+**Transiciones que importan (a grandes rasgos):**
 
----
-
-## Interpretation
-
-The automata operate on sequences of tokens, not raw text.
-
-Example:
-HARDCODED_PASSWORD → PRINT_SENSITIVE → Security Violation
+- Ves password/api key → estado de “ya vi un secreto”.  
+- Si después viene print sensible → violación.  
+- `AWS_API_KEY` puede mandarte directo a violación según el diseño.
 
 ---
 
-## Justification
+## Ejemplo que se entiende a ojo
 
-Finite automata are sufficient because:
-- The language of token sequences is regular
-- Only finite memory is needed
+Secuencia: `HARDCODED_PASSWORD` → `PRINT_SENSITIVE`  
+**Resultado:** **Security Violation** (el cuento clásico: guardé la clave y la imprimí).
+
+---
+
+## Por qué nos alcanza un autómata finito
+
+Los tokens son un **alfabeto finito** y las condiciones que modelamos son **memoria finita** (“¿ya vi un secreto?”, “¿estoy en violación?”). No necesitamos contar paréntesis infinitos acá: eso lo dejamos para la parte de gramática en configs.
+
+Por eso un DFA es razonable; si el lenguaje de secuencias fuera más rico (tipo anidamiento arbitrario de eventos con stack), habría que subir de modelo.

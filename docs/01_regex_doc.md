@@ -1,94 +1,77 @@
-# 1. Code Preprocessing and Tokenization (Regular Expressions)
+# 1. Detección con expresiones regulares
 
-## Objective
-The goal of this module is to detect insecure patterns in source code and configuration files using regular expressions. The output is a sequence of abstract tokens representing potential security issues.
+## Qué problema resolvemos acá
 
-This corresponds to the lexical level of analysis, where files are treated as strings over a finite alphabet.
+Antes de meter autómatas, el archivo es solo texto. Con **regex** buscamos patrones que suelen ir mal en repos reales (keys, passwords en duro, prints feos, etc.). La salida no es “sí/no” todavía: armamos una **lista de tokens** por línea, que después le van a entrar al clasificador.
 
----
-
-## Regular Expressions and Languages
-
-### 1. AWS API Key
-
-Regex:
-AKIA[0-9A-Z]{16}
-
-Language:
-L_AWS = { "AKIA"x | x ∈ [0-9A-Z]^{16} }
-
-Description:
-Recognizes strings starting with "AKIA" followed by exactly 16 uppercase alphanumeric characters.
+En criollo: primero marcamos “esto parece X”, sin todavía decidir la gravedad final del archivo.
 
 ---
 
-### 2. Hardcoded Password
+## Patrones que usamos y qué lenguaje aproximan
 
-Regex:
-(?:String\s+)?password\s*=\s*"[^"]+"
+### 1. Clave de AWS
 
-Language:
-Assignments where a variable named "password" is assigned a string literal.
+**Regex:** `AKIA[0-9A-Z]{16}`
 
-Example:
-password = "admin123"
+**Lenguaje (idea):** cadenas que empiezan en `AKIA` y siguen con exactamente 16 caracteres alfanuméricos en mayúsculas/dígitos.
 
 ---
 
-### 3. API Key
+### 2. Contraseña en duro
 
-Regex:
-(?:String\s+)?api[_-]?key\s*=\s*"[^"]+"
+**Regex:** `(?:String\s+)?password\s*=\s*"[^"]+"`
 
-Language:
-Assignments to variables named api_key, api-key, or apikey.
+**Qué capturamos:** asignaciones a una variable llamada `password` con un string literal (en Java puede ir con `String` adelante o no).
 
----
-
-### 4. Sensitive Print
-
-Regex:
-^\s*System\.out\.println\s*\(\s*(?:password|api[_-]?key)\s*\)\s*;?\s*$
-
-Language:
-Lines printing sensitive variables.
+**Ejemplo típico:** `password = "admin123"`
 
 ---
 
-### 5. TODO Comment
+### 3. API key en variable
 
-Regex:
-//\s*TODO:?.*
+**Regex:** `(?:String\s+)?api[_-]?key\s*=\s*"[^"]+"`
 
-Language:
-Single-line comments indicating unfinished or unsafe code.
+**Qué capturamos:** `api_key`, `api-key`, `apikey`, etc., con string literal.
 
 ---
 
-### 6. Suspicious URL
+### 4. Print sensible
 
-Regex:
-https?://(?:localhost|internal|dev|staging)[^\s"']*
+**Regex:** `^\s*System\.out\.println\s*\(\s*(?:password|api[_-]?key)\s*\)\s*;?\s*$`
 
-Language:
-URLs pointing to internal or development environments.
+**Qué capturamos:** líneas donde se imprime `password` o la api key. Eso junto con el punto anterior es lo que más nos interesa para la “violación fuerte”.
 
 ---
 
-### 7. Internal IP
+### 5. Comentarios TODO
 
-Regex:
-\b(?:10\.\d{1,3}\.\d{1,3}\.\d{1,3}|192\.168\.\d{1,3}\.\d{1,3}|172\.(?:1[6-9]|2\d|3[0-1])\.\d{1,3}\.\d{1,3})\b
+**Regex:** `//\s*TODO:?.*`
 
-Language:
-Private IPv4 addresses.
+**Idea:** marcamos deuda técnica; a veces es inocente, a veces es “acá falta arreglar algo peligroso”.
 
 ---
 
-## Implementation
+### 6. URL sospechosa
 
-- detect_issues(): extracts matches
-- extract_tokens(): produces token sequence
-- classify_line(): assigns a token per line
+**Regex:** `https?://(?:localhost|internal|dev|staging)[^\s"']*`
+
+**Idea:** URLs que apuntan a entornos internos o de desarrollo, que no deberían colarse en producción tal cual.
 
 ---
+
+### 7. IP privada
+
+**Regex:** `\b(?:10\.\d{1,3}\.\d{1,3}\.\d{1,3}|192\.168\.\d{1,3}\.\d{1,3}|172\.(?:1[6-9]|2\d|3[0-1])\.\d{1,3}\.\d{1,3})\b`
+
+**Idea:** rangos IPv4 privados comunes (10.x, 192.168.x, 172.16–31.x).
+
+---
+
+## Dónde está en el código
+
+- `detect_issues()` — saca los matches con contexto.  
+- `extract_tokens()` — arma la secuencia de tokens del archivo.  
+- `classify_line()` — decide qué etiqueta le toca a cada línea.
+
+Si algo no matchea con ningún patrón “interesante”, en la práctica cae en algo tipo `OTHER` para el siguiente paso.
