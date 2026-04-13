@@ -1,0 +1,41 @@
+Config:
+    elements*=Element
+;
+
+Element:
+    Section | Assignment
+;
+
+Section:
+    name=ID '{' elements*=Element '}'
+;
+
+Assignment:
+    SensitiveAssignment | RegularAssignment
+;
+
+SensitiveAssignment:
+    key=SensitiveKey '=' value=EnvReference
+;
+
+RegularAssignment:
+    key=ID '=' value=Value
+;
+
+SensitiveKey:
+    'DB_PASSWORD' |
+    'API_KEY' |
+    'SECRET_KEY' |
+    'AWS_ACCESS_KEY_ID' |
+    'APP_PASSWORD' |
+    'APP_API_KEY' |
+    'APP_BASE_URL'
+;
+
+Value:
+    STRING | INT | BOOL | EnvReference
+;
+
+EnvReference:
+    '${' ref=ID '}'
+;

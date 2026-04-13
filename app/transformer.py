@@ -56,7 +56,7 @@ def _read_env_file(env_path: str) -> Dict[str, str]:
     if not os.path.exists(env_path):
         return env_map
 
-    with open(env_path, "r", encoding="utf-8") as f:
+    with open(env_path , "r", encoding="utf-8") as f:
         for line in f:
             stripped = line.strip()
             if not stripped or stripped.startswith("#") or "=" not in stripped:
