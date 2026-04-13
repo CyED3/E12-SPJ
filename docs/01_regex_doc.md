@@ -1,77 +1,77 @@
-# 1. Detección con expresiones regulares
+# 1. Detection with regular expressions
 
-## Qué problema resolvemos acá
+## What this stage is for
 
-Antes de meter autómatas, el archivo es solo texto. Con **regex** buscamos patrones que suelen ir mal en repos reales (keys, passwords en duro, prints feos, etc.). La salida no es “sí/no” todavía: armamos una **lista de tokens** por línea, que después le van a entrar al clasificador.
+Before any automaton runs, the file is just text. **Regex** picks up patterns that often go wrong in real repos (keys, hardcoded passwords, bad prints, etc.). The output is not a final yes/no yet: we build a **token list** that the classifier consumes later.
 
-En criollo: primero marcamos “esto parece X”, sin todavía decidir la gravedad final del archivo.
+In plain terms: first we flag “this looks like X”, without fully deciding final severity.
 
 ---
 
-## Patrones que usamos y qué lenguaje aproximan
+## Patterns and the languages they approximate
 
-### 1. Clave de AWS
+### 1. AWS-style API key
 
 **Regex:** `AKIA[0-9A-Z]{16}`
 
-**Lenguaje (idea):** cadenas que empiezan en `AKIA` y siguen con exactamente 16 caracteres alfanuméricos en mayúsculas/dígitos.
+**Language (idea):** strings that start with `AKIA` followed by exactly sixteen uppercase alphanumeric characters.
 
 ---
 
-### 2. Contraseña en duro
+### 2. Hardcoded password
 
 **Regex:** `(?:String\s+)?password\s*=\s*"[^"]+"`
 
-**Qué capturamos:** asignaciones a una variable llamada `password` con un string literal (en Java puede ir con `String` adelante o no).
+**What we match:** assignments to a variable named `password` with a string literal (optional leading `String` in Java).
 
-**Ejemplo típico:** `password = "admin123"`
+**Typical example:** `password = "admin123"`
 
 ---
 
-### 3. API key en variable
+### 3. API key in a variable
 
 **Regex:** `(?:String\s+)?api[_-]?key\s*=\s*"[^"]+"`
 
-**Qué capturamos:** `api_key`, `api-key`, `apikey`, etc., con string literal.
+**What we match:** `api_key`, `api-key`, `apikey`, etc., with a string literal.
 
 ---
 
-### 4. Print sensible
+### 4. Sensitive print
 
 **Regex:** `^\s*System\.out\.println\s*\(\s*(?:password|api[_-]?key)\s*\)\s*;?\s*$`
 
-**Qué capturamos:** líneas donde se imprime `password` o la api key. Eso junto con el punto anterior es lo que más nos interesa para la “violación fuerte”.
+**What we match:** lines that print `password` or the API key. Together with the previous case, that is the main story for a “strong” violation.
 
 ---
 
-### 5. Comentarios TODO
+### 5. TODO comments
 
 **Regex:** `//\s*TODO:?.*`
 
-**Idea:** marcamos deuda técnica; a veces es inocente, a veces es “acá falta arreglar algo peligroso”.
+**Idea:** technical debt markers; sometimes harmless, sometimes “we still need to fix something risky here”.
 
 ---
 
-### 6. URL sospechosa
+### 6. Suspicious URL
 
 **Regex:** `https?://(?:localhost|internal|dev|staging)[^\s"']*`
 
-**Idea:** URLs que apuntan a entornos internos o de desarrollo, que no deberían colarse en producción tal cual.
+**Idea:** URLs pointing at internal or dev-style hosts that should not ship to production as-is.
 
 ---
 
-### 7. IP privada
+### 7. Private IP
 
 **Regex:** `\b(?:10\.\d{1,3}\.\d{1,3}\.\d{1,3}|192\.168\.\d{1,3}\.\d{1,3}|172\.(?:1[6-9]|2\d|3[0-1])\.\d{1,3}\.\d{1,3})\b`
 
-**Idea:** rangos IPv4 privados comunes (10.x, 192.168.x, 172.16–31.x).
+**Idea:** common private IPv4 ranges (10.x, 192.168.x, 172.16–31.x).
 
 ---
 
-## Dónde está en el código
+## Where it lives in code
 
-- `detect_issues()` — saca los matches con contexto.  
-- `extract_tokens()` — arma la secuencia de tokens del archivo.  
-- `classify_line()` — decide qué etiqueta le toca a cada línea.
+- `detect_issues()` — returns matches with context.  
+- `extract_tokens()` — builds the token sequence for the file.  
+- `classify_line()` — picks the label for a single line.
 
-Si algo no matchea con ningún patrón “interesante”, en la práctica cae en algo tipo `OTHER` para el siguiente paso.
+Anything that does not match an “interesting” pattern effectively becomes `OTHER` for the next stage.

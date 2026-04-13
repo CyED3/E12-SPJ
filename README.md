@@ -1,53 +1,54 @@
-# Chomsky – analizador de seguridad en código
+# Chomsky – code security analyzer
 
-Hicimos una herramienta que revisa código y configs buscando cosas peligrosas (contraseñas sueltas, keys, etc.). Por detrás usa cosas de **lenguajes formales**: expresiones regulares para detectar, **autómatas finitos** para decidir si el archivo va en “safe / revisar / violación”, y **transductores** para proponer cambios más seguros. La parte de gramática para configs “bien formadas” está explicada en `docs/`.
-
----
-
-## Dónde está cada cosa (lo que pide la tarea)
-
-| Lo que piden | Dónde lo dejamos |
-|--------------|------------------|
-| Documentación en Markdown dentro de `docs/` | [docs/README.md](docs/README.md) y los archivos numerados |
-| Cómo instalar, dependencias y cómo usarlo | Aquí abajo + [docs/USER_GUIDE.md](docs/USER_GUIDE.md) |
-| Explicación de la gramática y los autómatas | [docs/04_cfg_grammar.md](docs/04_cfg_grammar.md), [docs/02_automata.md](docs/02_automata.md), y lo demás en `docs/` |
+This tool scans source and configuration text for risky patterns (hardcoded passwords, API keys, and similar issues). Under the hood it uses ideas from **formal languages**: regular expressions for detection, **finite automata** to label a file as Safe / Needs Review / Security Violation, and **finite-state transducers** to suggest safer rewrites. The CFG-style view of “well-formed secure configuration” is written up under `docs/`.
 
 ---
 
-## Qué hace el proyecto (en pocas palabras)
+## Where things live (course checklist)
 
-Pasas un archivo o una carpeta y Chomsky te dice si se ve **seguro**, si **merece revisión** o si hay una **violación clara** (por ejemplo contraseña en duro y después un `println` de eso). Si le dices que sí, puede intentar arreglar cosas (por ejemplo mandar valores sensibles a variables de entorno). El flujo es: **detectar → clasificar → transformar**; la validación estructural con CFG está documentada para la parte de configuración.
+| Requirement | Location |
+|-------------|----------|
+| Markdown docs under `docs/` | [docs/README.md](docs/README.md) and the numbered notes |
+| Setup, dependencies, usage | This file + [docs/USER_GUIDE.md](docs/USER_GUIDE.md) |
+| Grammar and automata design | [docs/04_cfg_grammar.md](docs/04_cfg_grammar.md), [docs/02_automata.md](docs/02_automata.md), and the rest of `docs/` |
 
 ---
 
-## Dependencias
+## What it does (short)
 
-En la raíz del repo:
+You pass a file or folder; Chomsky reports whether things look **Safe**, need **human review**, or are a clear **Security Violation** (for example hardcoded password plus printing it). If you opt in, it can try to fix issues (for example by moving literals to environment variables). Pipeline: **detect → classify → transform**; structural CFG validation for configuration is described in the docs.
+
+---
+
+## Dependencies
+
+From the repo root:
 
 ```bash
 pip install -r requirements.txt
 ```
 
-- **pyformlang**: autómatas y transductores.  
-- **pandas**: armamos CSV cuando analizás un directorio completo.  
+- **pyformlang** — DFAs and FSTs.  
+- **pandas** — CSV reports when scanning a whole directory.  
+- **pytest** — running the test suite.
 
-Lo demás es biblioteca estándar de Python (`re`, `os`, etc.).
+Everything else is the Python standard library (`re`, `os`, etc.).
 
 ---
 
-## Cómo instalarlo
+## Installation
 
-1. Clonás el repo (o el que te dieron por Classroom).  
-2. Te recomendamos un entorno virtual:
+1. Clone the repository (or use the GitHub Classroom copy).  
+2. (Recommended) use a virtual environment:
 
    ```bash
    python -m venv .venv
    .venv\Scripts\activate
    ```
 
-   En Linux/macOS: `source .venv/bin/activate`
+   On Linux/macOS: `source .venv/bin/activate`
 
-3. Instalás dependencias:
+3. Install dependencies:
 
    ```bash
    pip install -r requirements.txt
@@ -55,18 +56,18 @@ Lo demás es biblioteca estándar de Python (`re`, `os`, etc.).
 
 ---
 
-## Cómo usarlo
+## Usage
 
-Desde la **carpeta raíz** del proyecto (donde está la carpeta `app/`):
+From the **project root** (the directory that contains `app/`):
 
 ```bash
-python -m app.cli [ruta]
+python -m app.cli [path]
 ```
 
-- **`ruta`**: opcional. Puede ser relativa a la raíz o una ruta absoluta; si no la encuentra ahí, también busca en `samples/`. Si no pasás nada, te lista `samples/` y te pide que escribas qué analizar.  
-- Después te pregunta si querés **aplicar** el refactor automático (`y`/`n`). Eso conviene leerlo con calma en [docs/USER_GUIDE.md](docs/USER_GUIDE.md) antes de tocar un proyecto real.
+- **`path`** (optional): file or directory, relative to the project root or absolute; if not found there, the CLI also looks under `samples/`. If omitted, it lists `samples/` and asks you to type a path.  
+- You are then asked whether to **apply** automatic refactoring (`y`/`n`). Read [docs/USER_GUIDE.md](docs/USER_GUIDE.md) before using `y` on real projects.
 
-**Ejemplos rápidos:**
+**Quick examples:**
 
 ```bash
 python -m app.cli samples/insecure.java
@@ -75,22 +76,34 @@ python -m app.cli sample_project
 
 ---
 
-## Cómo está armado el código
+## Code layout
 
-`detector.py` → `classifier.py` → `transformer.py`, y `cli.py` es el que orquesta todo. Los detalles formales (regex, tuplas del DFA, FST, CFG) están en `docs/` por si el profe quiere ver el diseño.
+`detector.py` → `classifier.py` → `transformer.py`, orchestrated by `cli.py`. Formal details (regex, DFA tuples, FST, CFG) are in `docs/`.
 
 ---
 
-## Tecnologías
+## Tests (PDF “Testing and Validation” — part 1 only for now)
+
+```bash
+python -m pytest tests -q
+```
+
+**Part 1 (this commit):** scenario tests in `tests/test_part1_scenarios.py` — insecure code, safe code, config-like snippets, and mixed cases, plus the older `test_detector.py` / `test_detector_extra.py`.
+
+**Part 2** (unit tests for regex, DFA, FST, and CFG validation) can be added in a follow-up commit when you want it.
+
+---
+
+## Stack
 
 Python 3.10+, pyformlang, pandas.
 
 ---
 
-## Autores
+## Authors
 
 - Sebastián Romero Leon  
 - Paula Andrea Piedrahita  
 - Jean Carlo Ocampo  
 
-Si el profe pide IDE o paralelo, sumalo acá en una línea.
+Add IDE or course section here if your instructor asks for it.

@@ -1,13 +1,13 @@
-# Documentación de Chomsky
+# Chomsky documentation (`docs/`)
 
-Acá juntamos el diseño y las guías del proyecto **Chomsky** (tarea integradora CyED III). No es marketing: es para que alguien entienda qué hace el programa y por qué usamos cada modelo formal.
+Design notes and user-facing guides for the **Chomsky** project (CyED III integrative task). This is technical documentation, not marketing: it explains what the program does and why each formal model is there.
 
-| Archivo | Para qué sirve |
-|---------|----------------|
-| [Guía de uso](USER_GUIDE.md) | Cómo correr el CLI, qué te va a preguntar, qué significa la salida, CSV, etc. |
-| [01 – Regex](01_regex_doc.md) | Qué patrones buscamos y qué lenguaje reconoce cada uno |
-| [02 – Autómatas](02_automata.md) | Los DFA que deciden Safe / Needs Review / Violation |
-| [03 – Transductores](03_transducer.md) | Cómo pasamos de “encontré esto” a “te lo reescribo así” |
-| [04 – Gramática CFG](04_cfg_grammar.md) | Gramática de config “segura” y por qué no alcanza con regex |
+| File | What it covers |
+|------|----------------|
+| [User guide](USER_GUIDE.md) | How to run the CLI, prompts, console output, CSV reports |
+| [01 – Regular expressions](01_regex_doc.md) | Detection patterns and the languages they approximate |
+| [02 – Finite automata](02_automata.md) | DFAs for Safe / Needs Review / Security Violation |
+| [03 – Finite-state transducers](03_transducer.md) | From “we found this” to “rewrite it like this” |
+| [04 – CFG grammar](04_cfg_grammar.md) | Secure configuration grammar and why it is not regular |
 
-Instalación resumida y punteros: [README principal](../README.md).
+Setup summary: [root README.md](../README.md).

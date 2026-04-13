@@ -1,32 +1,32 @@
-# Guía de uso — CLI de Chomsky
+# User guide — Chomsky CLI
 
-## Qué es esto
+## What this is
 
-Chomsky recorre **un archivo** o **toda una carpeta** y te cuenta si encuentra patrones raros de seguridad. No es un antivirus: es un laboratorio de la materia, pero sirve para ver el flujo completo (detectar → clasificar → transformar) y, si querés, generar reportes en CSV.
+Chomsky walks **one file** or a **whole folder** and reports security-style patterns. It is a course lab, not a commercial scanner, but it shows the full flow (detect → classify → transform) and can emit CSV reports when you analyze a directory.
 
-Tipos de archivo que miramos: `.java`, `.cfg`, `.conf`, `.env`, `.txt`.
-
----
-
-## Antes de empezar
-
-- Python **3.10 o más nuevo** va bien.  
-- Instalá lo de `requirements.txt` (está explicado en el README de la raíz).
+Supported extensions: `.java`, `.cfg`, `.conf`, `.env`, `.txt`.
 
 ---
 
-## Cómo lo corrés
+## Before you start
 
-Parado en la **raíz del repo** (donde ves la carpeta `app/`):
+- **Python 3.10+** is enough.  
+- Install packages from `requirements.txt` (see the root [README.md](../README.md)).
+
+---
+
+## How to run it
+
+From the **repository root** (where the `app/` folder is):
 
 ```bash
-python -m app.cli [ruta]
+python -m app.cli [path]
 ```
 
-- **`ruta`** es opcional: archivo o carpeta. Si la escribís relativa, primero busca desde la raíz del proyecto; si no existe, prueba en `samples/`.  
-- Si **no** ponés ruta, el programa te lista lo que hay en `samples/` y te pide que escribas el nombre a mano.
+- **`path`** is optional: a file or directory. Relative paths are resolved from the project root first; if missing, the CLI tries under `samples/`.  
+- If you **omit** `path`, it lists `samples/` and asks you to type a name.
 
-### Ejemplos que podés copiar
+### Copy-paste examples
 
 ```bash
 python -m app.cli samples/insecure.java
@@ -34,49 +34,49 @@ python -m app.cli sample_project
 python -m app.cli sample_project/src/Main.java
 ```
 
-### La pregunta del millón: ¿aplico el arreglo automático?
+### Apply automatic refactoring?
 
-Te va a salir: **Apply automatic secure refactoring? (y/n)** (sí, está en inglés en el código).
+You will see: **Apply automatic secure refactoring? (y/n)** (that string is English in the code).
 
-- **`n`**: solo mirás. Te imprime hallazgos, clasificación, qué haría el transductor, etc., **sin tocar** los archivos. Es lo más seguro para practicar.  
-- **`y`**: si el archivo califica como *Needs Review* o *Security Violation* y hay cambios posibles, **sí modifica** el archivo original y deja un **`.bak`** al lado. También puede tocar o crear un **`.env`** cerca del archivo cuando saca secretos a variables de entorno.
+- **`n`**: read-only run. Prints findings, classification, what the transducer would do, etc., **without** changing files. Safest for practice.  
+- **`y`**: for **Needs Review** or **Security Violation** when the transformer actually changes text, it **writes** the file and leaves a **`.bak`** next to it. It may also create or update a **`.env`** near the file when secrets are moved to the environment.
 
-**Consejo de persona a persona:** en un proyecto de verdad, usá `git` o copia la carpeta antes de poner `y`. Acá es fácil equivocarse y pisar algo.
-
----
-
-## Qué significa lo que imprime
-
-Para cada archivo vas a ver más o menos esto:
-
-1. **DETECTED PATTERNS** — lo que encontró el regex (tipo, línea, pedacito de texto).  
-2. **TOKEN SEQUENCE** — la “traducción” a etiquetas que le entran al autómata (`HARDCODED_PASSWORD`, etc.).  
-3. **CLASSIFICATION** — si quedó **Safe**, **Needs Review** o **Security Violation**, y qué DFA “ganó”.  
-4. **TRANSFORMATION TRACE** — línea por línea, qué acción le aplicaría el transductor.  
-5. **ENV ENTRIES** — si propone claves/valores para el `.env`.
-
-Si le pasás una **carpeta**, al final hace un **resumen** y deja CSV en la carpeta desde la que ejecutaste el comando (normalmente la raíz del proyecto):
-
-| Archivo | Qué trae |
-|---------|----------|
-| `findings_report.csv` | Todos los matches |
-| `classification_report.csv` | Clasificación por archivo |
-| `transformations_report.csv` | Pasos de transformación |
-| `env_report.csv` | Variables de entorno sugeridas/escritas |
+**Practical tip:** on a real repo, use `git` or a copy of the folder before answering **`y`**. It is easy to overwrite something by mistake.
 
 ---
 
-## Si querés leer el lado “formal”
+## Reading the output
+
+For each file you will roughly see:
+
+1. **DETECTED PATTERNS** — regex hits (type, line, matched text).  
+2. **TOKEN SEQUENCE** — abstract labels fed to the automaton (`HARDCODED_PASSWORD`, etc.).  
+3. **CLASSIFICATION** — **Safe**, **Needs Review**, or **Security Violation**, plus which DFA “won”.  
+4. **TRANSFORMATION TRACE** — line-by-line transducer actions.  
+5. **ENV ENTRIES** — suggested or written `.env` key/value pairs.
+
+If you pass a **directory**, you get a short **summary** and CSV files in the **current working directory** (usually the project root):
+
+| File | Contents |
+|------|----------|
+| `findings_report.csv` | All pattern matches |
+| `classification_report.csv` | Classification per file |
+| `transformations_report.csv` | Transformation steps |
+| `env_report.csv` | Environment entries |
+
+---
+
+## Formal models (deep dive)
 
 - Regex → [01_regex_doc.md](01_regex_doc.md)  
 - DFA → [02_automata.md](02_automata.md)  
 - FST → [03_transducer.md](03_transducer.md)  
-- Gramática de configs → [04_cfg_grammar.md](04_cfg_grammar.md)  
+- CFG for configs → [04_cfg_grammar.md](04_cfg_grammar.md)  
 
 ---
 
-## Si algo falla
+## Troubleshooting
 
-- **Path not found**: revisá la ruta o probá un nombre que salga en la lista de `samples/`.  
-- Todo se lee como **UTF-8**.  
-- Si una carpeta “no hace nada”, puede que no tenga extensiones soportadas o solo archivos ocultos / ignorados.
+- **Path not found**: check the path or try a name listed under `samples/`.  
+- Files are read as **UTF-8**.  
+- “Nothing happened” for a folder: maybe there are no supported extensions, or only hidden/unsupported files.

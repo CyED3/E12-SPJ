@@ -1,18 +1,18 @@
-# 2. Clasificación con autómatas finitos (DFA)
+# 2. Classification with deterministic finite automata (DFA)
 
-## Intuición
+## Intuition
 
-Ya tenemos una **secuencia de tokens** (no el texto crudo). Ahora queremos etiquetar el archivo en tres cajones:
+We already have a **token sequence** (not raw text). We want to put the file into one of three buckets:
 
-- **Safe** — no hay señales fuertes de riesgo.  
-- **Needs Review** — hay cosas raras, pero no armamos el combo “gravísimo”.  
-- **Security Violation** — por ejemplo secreto + print, o ciertos tokens que el enunciado trata como violación directa.
+- **Safe** — no strong risk signals.  
+- **Needs Review** — something looks off, but we do not hit the worst combination.  
+- **Security Violation** — for example secret plus print, or certain tokens the assignment treats as a direct violation.
 
-Cada categoría la modelamos con un **DFA** distinto en `pyformlang`; al final el programa decide cuál aplica según las reglas que programamos.
+Each bucket is modeled with a separate **DFA** in `pyformlang`; the program then picks which description applies according to the rules we coded.
 
 ---
 
-## Alfabeto de tokens
+## Token alphabet
 
 Σ = {
  `API_KEY`, `HARDCODED_PASSWORD`, `PRINT_SENSITIVE`,
@@ -22,32 +22,32 @@ Cada categoría la modelamos con un **DFA** distinto en `pyformlang`; al final e
 
 ---
 
-## DFA 1: “¿Es safe de verdad?”
+## DFA 1: “Is it really safe?”
 
-**Tipo:** DFA (determinista).
+**Type:** DFA (deterministic).
 
-**5-tupla (resumida):**
+**5-tuple (short):**
 
 - Q = {`safe_start`, `safe_ok`, `safe_reject`}  
-- Σ = el alfabeto de arriba  
+- Σ = alphabet above  
 - q₀ = `safe_start`  
 - F = {`safe_ok`}  
 
-**δ en palabras:** desde el inicio, si solo ves `OTHER` llegás a “ok”. Apenas aparece **cualquier** token “picante”, vas a rechazo y te quedás ahí. Es el autómata del perfeccionista: una sola mancha y no es safe.
+**δ in words:** from the start, if you only ever see `OTHER` you reach “ok”. The moment any “hot” token appears you drop into reject and stay there. One stain and it is not safe.
 
 ---
 
-## DFA 2: “¿Va a revisión humana?”
+## DFA 2: “Should a human review this?”
 
 Q = {`review_start`, `review_ok`, `review_reject`}  
 q₀ = `review_start`  
 F = {`review_ok`}  
 
-**Idea:** acepta cosas sospechosas o incompletas **sin** llegar al peor caso que modelamos en el tercer DFA (por ejemplo ciertos combos con print + secreto, o AWS key según las reglas).
+**Idea:** accepts suspicious or incomplete situations **without** reaching the worst case captured by the third DFA (for example some print+secret combos, or AWS key depending on the rules).
 
 ---
 
-## DFA 3: “¿Esto ya es violación?”
+## DFA 3: “Is this already a violation?”
 
 Q = {
   `violation_start`,
@@ -59,23 +59,23 @@ Q = {
 q₀ = `violation_start`  
 F = {`violation_ok`}  
 
-**Transiciones que importan (a grandes rasgos):**
+**Transitions that matter (high level):**
 
-- Ves password/api key → estado de “ya vi un secreto”.  
-- Si después viene print sensible → violación.  
-- `AWS_API_KEY` puede mandarte directo a violación según el diseño.
-
----
-
-## Ejemplo que se entiende a ojo
-
-Secuencia: `HARDCODED_PASSWORD` → `PRINT_SENSITIVE`  
-**Resultado:** **Security Violation** (el cuento clásico: guardé la clave y la imprimí).
+- Password / API key → “secret seen” state.  
+- Sensitive print after that → violation.  
+- `AWS_API_KEY` can jump straight to violation depending on the design.
 
 ---
 
-## Por qué nos alcanza un autómata finito
+## Easy example
 
-Los tokens son un **alfabeto finito** y las condiciones que modelamos son **memoria finita** (“¿ya vi un secreto?”, “¿estoy en violación?”). No necesitamos contar paréntesis infinitos acá: eso lo dejamos para la parte de gramática en configs.
+Sequence: `HARDCODED_PASSWORD` → `PRINT_SENSITIVE`  
+**Outcome:** **Security Violation** (classic story: stored the secret and printed it).
 
-Por eso un DFA es razonable; si el lenguaje de secuencias fuera más rico (tipo anidamiento arbitrario de eventos con stack), habría que subir de modelo.
+---
+
+## Why a finite automaton is enough here
+
+Tokens form a **finite alphabet** and the policies we encode use **finite memory** (“have I seen a secret?”, “am I in violation?”). We are not counting arbitrarily nested parentheses in this stage; that is what the configuration grammar is for.
+
+So a DFA is reasonable. If the event language needed unbounded nesting with a stack, we would move up to a richer model.

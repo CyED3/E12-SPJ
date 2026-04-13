@@ -1,70 +1,70 @@
-# 3. Refactor automático con transductores (FST)
+# 3. Automatic refactoring with finite-state transducers (FST)
 
-## Qué agrega esto respecto al DFA
+## What this adds compared with a DFA
 
-El autómata solo **acepta o rechaza** (o te dice en qué estado caés). El **transductor** va un paso más: además de leer tokens, **emite acciones** del estilo “reemplazá esta línea por otra” o “comentá esto”. Es la parte “cirujano” del proyecto: ya sabemos que hay problema, ahora proponemos un parche.
+An automaton **accepts or rejects** (or ends in some state). A **transducer** goes further: while reading tokens it also **emits actions** such as “replace this line” or “comment this out”. That is the “surgeon” part: we already know something is wrong, now we propose a patch.
 
 ---
 
-## Modelo general (para el informe)
+## General model (for the report)
 
-Un FST se puede escribir como:
+An FST can be written as:
 
 T = (Q, Σ, Γ, δ, ω, q₀, F)
 
-- **Σ** — lo que leés (tokens de seguridad).  
-- **Γ** — lo que “escupís” como salida simbólica (acciones de rewrite).  
-- **ω** — función que dice qué salida va con cada transición.
+- **Σ** — what you read (security tokens).  
+- **Γ** — symbolic outputs (rewrite actions).  
+- **ω** — output function on transitions.
 
-En el código de `pyformlang` armamos FST y después esas acciones las traducimos a texto Java / líneas concretas.
+In `pyformlang` we build FSTs and then map those actions to concrete Java / config lines.
 
 ---
 
-## FST 1: secretos → variable de entorno
+## FST 1: secrets → environment variable
 
 Q = {q0, q1}  
 Σ = {`HARDCODED_PASSWORD`, `API_KEY`, `AWS_API_KEY`}  
 Γ = {`ENV_PASSWORD`, `ENV_API_KEY`, `ENV_AWS_KEY`}  
 
-**Idea:** un token de secreto dispara la acción correspondiente (password → env de password, etc.).
+**Idea:** a secret token fires the matching action (password → password env, etc.).
 
 ---
 
-## FST 2: sacar prints peligrosos
+## FST 2: remove dangerous prints
 
 Σ = {`PRINT_SENSITIVE`}  
 Γ = {`REMOVE_SENSITIVE_PRINT`}
 
 ---
 
-## FST 3: limpiar TODOs (línea)
+## FST 3: strip TODO lines
 
 Σ = {`TODO_COMMENT`}  
 Γ = {`DELETE_LINE`}
 
 ---
 
-## FST 4: URL rara → algo configurable
+## FST 4: odd URL → configurable value
 
 Σ = {`SUSPICIOUS_URL`}  
 Γ = {`ENV_URL`}
 
 ---
 
-## FST 5: IP interna
+## FST 5: internal IP
 
 Σ = {`INTERNAL_IP`}  
 Γ = {`REDACT_IP`}
 
 ---
 
-## Cómo lo bajamos a código
+## How this maps to code
 
-1. Token → acción (vía FST / tabla de transiciones).  
-2. Acción → string nuevo de línea (funciones que reescriben Java o config).
+1. Token → action (via FST / transition table).  
+2. Action → new line string (functions that rewrite Java or config text).
 
 ---
 
-## Por qué no alcanza “solo un DFA”
+## Why a DFA alone is not enough
 
-Porque acá no queremos un booleano: queremos una **función** entrada → salida (texto transformado). Eso es exactamente el rol del transductor frente al autómata clasificador.
+We do not want only a boolean: we want an **input → output** mapping on text. That is exactly the transducer’s job compared with a plain classifier.

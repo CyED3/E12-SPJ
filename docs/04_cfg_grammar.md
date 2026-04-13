@@ -1,31 +1,31 @@
-# 4. Gramática libre de contexto para configuración “segura”
+# 4. Context-free grammar for “secure” configuration
 
-## Para qué sirve esto
+## What this section is for
 
-Imaginate un mini-lenguaje para archivos tipo `.env` o configs con secciones: que las asignaciones estén bien escritas, que se puedan anidar bloques, y que las claves sensibles **no** puedan llevar un valor plano tipo `admin123`, sino algo como `${MI_VARIABLE}`.
+Think of a small language for `.env`-style files or configs with sections: assignments must be well formed, blocks may nest, and sensitive keys must **not** use a plain value like `admin123`; they should use something like `${MY_VAR}`.
 
-Eso no se puede “cerrar” bien solo con regex si querés **anidar** llaves y asegurar que cierren parejo: por eso el enunciado pide una **CFG**. Acá dejamos la gramática y la justificación en limpio.
-
----
-
-## Terminales y no terminales
-
-**Terminales** (tokens idealizados que produciría un lexer):
-
-| Símbolo | Idea |
-|---------|------|
-| `LBRACE`, `RBRACE` | `{` y `}` |
-| `ID` | nombre de sección o clave |
-| `=` | asignación |
-| `STRING`, `NUMBER` | literales |
-| (referencia env) | algo como `${` + `ID` + `}` |
-
-**No terminales:** `Config`, `Section`, `Block`, `Entry`, `Key`, `Value`, `PlainValue`.  
-**Símbolo inicial:** `Config`.
+You cannot fully capture **nested braces** and “they must match” with regex alone at arbitrary depth, which is why the assignment asks for a **CFG**. Here we spell out the grammar and the non-regularity argument.
 
 ---
 
-## Reglas (estilo EBNF)
+## Terminals and non-terminals
+
+**Terminals** (idealized tokens from a lexer):
+
+| Symbol | Meaning |
+|--------|---------|
+| `LBRACE`, `RBRACE` | `{` and `}` |
+| `ID` | section or key name |
+| `=` | assignment |
+| `STRING`, `NUMBER` | literals |
+| (env reference) | pattern `${` + `ID` + `}` |
+
+**Non-terminals:** `Config`, `Section`, `Block`, `Entry`, `Key`, `Value`, `PlainValue`.  
+**Start symbol:** `Config`.
+
+---
+
+## Rules (EBNF-style)
 
 ```text
 Config     ::= Block*
@@ -44,25 +44,25 @@ EnvRef     ::= '${' ID '}'
 SensitiveKey ::= 'DB_PASSWORD' | 'API_KEY' | 'AWS_SECRET' | 'PASSWORD' | 'SECRET'
 ```
 
-En un validador real, la idea es: si la `Key` cae en **SensitiveKey**, el `Value` **tiene** que ser solo `EnvRef`. El resto de las claves pueden usar literal o referencia, según la política que definan.
+In a real validator, if `Key` is in **SensitiveKey**, then `Value` must be **only** `EnvRef`. Other keys might allow literals or references depending on policy.
 
 ---
 
-## Ejemplos que entran y salen
+## Examples
 
-**Bien** (secreto vía entorno):
+**Good** (secret via environment):
 
 ```text
 DB_PASSWORD=${SECURE_DB_PASSWORD}
 ```
 
-**Mal** para una política estricta (valor en claro):
+**Bad** under a strict policy (plaintext secret):
 
 ```text
 DB_PASSWORD=admin123
 ```
 
-**Anidado** (acá se ve la recursión `Config` dentro de `Section`):
+**Nested** (shows recursion `Config` inside `Section`):
 
 ```text
 section app {
@@ -74,18 +74,18 @@ section app {
 
 ---
 
-## Por qué esto no es un lenguaje regular
+## Why this is not a regular language
 
-1. **Llaves balanceadas:** contar “cuántas abrí y cuántas cerré” en profundidad arbitraria es el clásico ejemplo de algo que un autómata finito no puede hacer solo con estados finitos (necesitás memoria tipo pila).
+1. **Balanced braces:** counting “how many opens vs closes” at unbounded nesting depth is the standard example of something a finite automaton cannot do with finite states alone (you need stack-style memory).
 
-2. **Recursión:** adentro de una sección volvés a tener `Config`, que otra vez puede tener secciones… Eso es estructura de **árbol**, típica de CFG.
+2. **Recursion:** inside a section you again have `Config`, which may contain more sections. That is typical **tree-shaped** CFG structure.
 
-Las regex siguen sirviendo para **pistas** en una línea (“se parece a un password”), pero para decir “este archivo respeta la jerarquía y la política de secretos” conviene un parser con gramática (en el curso suelen mostrar **textX**; acá dejamos el diseño formal; el código del repo hoy se concentra más en la parte Java + regex + DFA + FST).
+Regex is still fine for **line-level hints** (“this looks like a password”), but saying “this file respects hierarchy and secret policy” calls for a grammar-based parser (courses often show **textX**; here we keep the formal design; the current `app/` code focuses on Java + regex + DFA + FST).
 
 ---
 
-## Cómo se relaciona con el repo
+## How this ties to the repository
 
-En `app/` está cableado el pipeline **regex → DFA → FST** para los archivos que soportamos. Esta gramática es el diseño del paso de **validación estructural** que describe la tarea integradora; un `.tx` de textX sería la implementación “bonita” con mensajes de error claros.
+`app/` wires **regex → DFA → FST** for the supported file types. This grammar is the design for the **structural validation** step from the integrative task; a textX `.tx` file would be the polished implementation with clear parse errors.
 
-Para ver cómo encaja la detección y los autómatas con el código, mirá [01_regex_doc.md](01_regex_doc.md), [02_automata.md](02_automata.md) y [03_transducer.md](03_transducer.md).
+For how detection and automata connect to the code, see [01_regex_doc.md](01_regex_doc.md), [02_automata.md](02_automata.md), and [03_transducer.md](03_transducer.md).
