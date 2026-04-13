@@ -89,3 +89,59 @@ Regex is still fine for **line-level hints** (“this looks like a password”),
 `app/` wires **regex → DFA → FST** for the supported file types. This grammar is the design for the **structural validation** step from the integrative task; a textX `.tx` file would be the polished implementation with clear parse errors.
 
 For how detection and automata connect to the code, see [01_regex_doc.md](01_regex_doc.md), [02_automata.md](02_automata.md), and [03_transducer.md](03_transducer.md).
+
+
+
+## Non-terminals
+
+V = {
+Config, Entry, Section, Assignment, Key, Value, EnvReference, Number, Boolean, BareWord
+}
+
+---
+
+## Terminals
+
+$\Sigma$ = { ID, STRING, INT, '{', '}', '=', '.', '${', 'true', 'false' }
+
+Descriptions:
+
+- `ID` = identifier  
+- `STRING` = quoted string  
+- `INT` = integer  
+- `{`, `}` = block delimiters  
+- `=` = assignment operator  
+- `.` = key separator  
+- `${` `}` = environment reference delimiters  
+- `true`, `false` = boolean values  
+
+---
+
+## Start symbol
+
+S = Config
+
+---
+
+## Production rules (EBNF)
+
+```ebnf
+Config       ::= Element
+
+Element       ::= Section | Assignment
+
+Section      ::= Key "{" Element "}"
+
+Assignment   ::= Key "=" Value
+
+Key          ::= ID ("." ID)*
+
+Value        ::= EnvReference | STRING | Number | Boolean | BareWord
+
+EnvReference ::= "${" ID "}"
+
+Number       ::= ["-"] INT ["." INT]
+
+Boolean      ::= "true" | "false"
+
+BareWord     ::= letter_or_digit_or_symbol+
