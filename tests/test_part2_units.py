@@ -1,11 +1,11 @@
 """
 Part 2 — unit tests by component
 
-Regex / detector, DFA (classifier), FST (transformer), and CFG-style checks in app/cfg_validation.py.
+Regex / detector, DFA (classifier), FST (transformer), and CFG-style checks in tests/cfg_validation.py.
 """
 
-from app.cfg_validation import lint_secure_config, secure_config_ok
-from app.classifier import classify_tokens_detailed, run_safe_dfa, run_security_violation_dfa
+from tests.cfg_validation import lint_secure_config, secure_config_ok
+from app.classifier import classify_tokens, classify_tokens_detailed, run_safe_dfa, run_security_violation_dfa
 from app.detector import classify_line, detect_issues, extract_tokens
 from app.transformer import build_secret_fst, token_to_action, transform_code
 
@@ -111,3 +111,37 @@ DB_PASSWORD=${X}
 def test_literal_api_key_fails():
     text = 'API_KEY="hello"\n'
     assert not secure_config_ok(text)
+
+
+# --- extra tests ---
+
+
+def test_only_aws_key_classified_security_violation():
+    assert classify_tokens(["AWS_API_KEY"]) == "Security Violation"
+
+
+def test_safe_dfa_false_when_todo_present():
+    assert run_safe_dfa(["TODO_COMMENT"]) is False
+
+
+def test_detect_issues_finds_todo_comment():
+    src = "// TODO: fix security here\n"
+    types = {f["type"] for f in detect_issues(src)}
+    assert "TODO_COMMENT" in types
+
+
+def test_suspicious_staging_url_is_detected():
+    line = 'String u = "https://staging.myapp.internal/api";'
+    assert classify_line(line) == "SUSPICIOUS_URL"
+
+
+def test_nested_balanced_braces_with_env_refs_ok():
+    cfg = """
+section app {
+  DB_PASSWORD=${DB_PWD}
+  nested {
+    API_KEY=${K}
+  }
+}
+"""
+    assert secure_config_ok(cfg)

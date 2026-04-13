@@ -89,7 +89,7 @@ python -m pytest tests -q
 ```
 
 - **Part 1 — scenarios:** `tests/test_part1_scenarios.py` (insecure / safe / config-like / mixed), plus `test_detector.py` and `test_detector_extra.py`.  
-- **Part 2 — units:** `tests/test_part2_units.py` (regex extraction, DFA classification, FST transforms, `app/cfg_validation.py` for CFG-style config lint).
+- **Part 2 — units:** `tests/test_part2_units.py` (regex extraction, DFA classification, FST transforms), plus `tests/cfg_validation.py` for CFG-style config lint.
 
 ---
 
@@ -105,4 +105,4 @@ Python 3.10+, pyformlang, pandas.
 - Paula Andrea Piedrahita  
 - Jean Carlo Ocampo  
 
-Add IDE or course section here if your instructor asks for it.
+

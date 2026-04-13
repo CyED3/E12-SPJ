@@ -1,4 +1,5 @@
 # Small validator for "secure-style" config rules from the course write-up.
+# Lives under tests/ with the suite that exercises CFG-style checks.
 # Not a full textX parser: we enforce sensitive key => ${VAR} and naive brace balance.
 
 from __future__ import annotations
