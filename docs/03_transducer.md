@@ -1,81 +1,70 @@
-# 3. Automatic Secure Refactoring (Finite State Transducers)
+# 3. Automatic refactoring with finite-state transducers (FST)
 
-## Objective
-Transform insecure code into secure code automatically.
+## What this adds compared with a DFA
 
----
-
-## General Model
-
-A Finite State Transducer is defined as:
-
-T = (Q, Σ, Γ, δ, ω, q0, F)
-
-Where:
-- Σ: input alphabet (tokens)
-- Γ: output alphabet (actions)
-- ω: output function
+An automaton **accepts or rejects** (or ends in some state). A **transducer** goes further: while reading tokens it also **emits actions** such as “replace this line” or “comment this out”. That is the “surgeon” part: we already know something is wrong, now we propose a patch.
 
 ---
 
-## FST 1: Secret → Environment Variable
+## General model (for the report)
+
+An FST can be written as:
+
+T = (Q, Σ, Γ, δ, ω, q₀, F)
+
+- **Σ** — what you read (security tokens).  
+- **Γ** — symbolic outputs (rewrite actions).  
+- **ω** — output function on transitions.
+
+In `pyformlang` we build FSTs and then map those actions to concrete Java / config lines.
+
+---
+
+## FST 1: secrets → environment variable
 
 Q = {q0, q1}  
-Σ = {HARDCODED_PASSWORD, API_KEY, AWS_API_KEY}  
-Γ = {ENV_PASSWORD, ENV_API_KEY, ENV_AWS_KEY}  
-q0 = q0  
-F = {q1}  
+Σ = {`HARDCODED_PASSWORD`, `API_KEY`, `AWS_API_KEY`}  
+Γ = {`ENV_PASSWORD`, `ENV_API_KEY`, `ENV_AWS_KEY`}  
 
-Transitions:
-- δ(q0, HARDCODED_PASSWORD) = q1
-- δ(q0, API_KEY) = q1
-- δ(q0, AWS_API_KEY) = q1
-
-Outputs:
-- ω(q0, HARDCODED_PASSWORD) = ENV_PASSWORD
-- ω(q0, API_KEY) = ENV_API_KEY
-- ω(q0, AWS_API_KEY) = ENV_AWS_KEY
+**Idea:** a secret token fires the matching action (password → password env, etc.).
 
 ---
 
-## FST 2: Sensitive Print Removal
+## FST 2: remove dangerous prints
 
-Σ = {PRINT_SENSITIVE}  
-Γ = {REMOVE_SENSITIVE_PRINT}
-
----
-
-## FST 3: TODO Removal
-
-Σ = {TODO_COMMENT}  
-Γ = {DELETE_LINE}
+Σ = {`PRINT_SENSITIVE`}  
+Γ = {`REMOVE_SENSITIVE_PRINT`}
 
 ---
 
-## FST 4: Suspicious URL
+## FST 3: strip TODO lines
 
-Σ = {SUSPICIOUS_URL}  
-Γ = {ENV_URL}
-
----
-
-## FST 5: Internal IP
-
-Σ = {INTERNAL_IP}  
-Γ = {REDACT_IP}
+Σ = {`TODO_COMMENT`}  
+Γ = {`DELETE_LINE`}
 
 ---
 
-## Implementation Strategy
+## FST 4: odd URL → configurable value
 
-- Token → action using FST
-- Action → concrete rewrite
+Σ = {`SUSPICIOUS_URL`}  
+Γ = {`ENV_URL`}
 
 ---
 
-## Justification
+## FST 5: internal IP
 
-FSTs are required because:
-- We transform input strings into output strings
-- This is not just recognition (like DFA)
-- It is a mapping (translation)
+Σ = {`INTERNAL_IP`}  
+Γ = {`REDACT_IP`}
+
+---
+
+## How this maps to code
+
+1. Token → action (via FST / transition table).  
+2. Action → new line string (functions that rewrite Java or config text).
+
+---
+
+## Why a DFA alone is not enough
+
+We do not want only a boolean: we want an **input → output** mapping on text. That is exactly the transducer’s job compared with a plain classifier.

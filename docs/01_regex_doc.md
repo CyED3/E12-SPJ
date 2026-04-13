@@ -1,94 +1,77 @@
-# 1. Code Preprocessing and Tokenization (Regular Expressions)
+# 1. Detection with regular expressions
 
-## Objective
-The goal of this module is to detect insecure patterns in source code and configuration files using regular expressions. The output is a sequence of abstract tokens representing potential security issues.
+## What this stage is for
 
-This corresponds to the lexical level of analysis, where files are treated as strings over a finite alphabet.
+Before any automaton runs, the file is just text. **Regex** picks up patterns that often go wrong in real repos (keys, hardcoded passwords, bad prints, etc.). The output is not a final yes/no yet: we build a **token list** that the classifier consumes later.
 
----
-
-## Regular Expressions and Languages
-
-### 1. AWS API Key
-
-Regex:
-AKIA[0-9A-Z]{16}
-
-Language:
-L_AWS = { "AKIA"x | x ∈ [0-9A-Z]^{16} }
-
-Description:
-Recognizes strings starting with "AKIA" followed by exactly 16 uppercase alphanumeric characters.
+In plain terms: first we flag “this looks like X”, without fully deciding final severity.
 
 ---
 
-### 2. Hardcoded Password
+## Patterns and the languages they approximate
 
-Regex:
-(?:String\s+)?password\s*=\s*"[^"]+"
+### 1. AWS-style API key
 
-Language:
-Assignments where a variable named "password" is assigned a string literal.
+**Regex:** `AKIA[0-9A-Z]{16}`
 
-Example:
-password = "admin123"
+**Language (idea):** strings that start with `AKIA` followed by exactly sixteen uppercase alphanumeric characters.
 
 ---
 
-### 3. API Key
+### 2. Hardcoded password
 
-Regex:
-(?:String\s+)?api[_-]?key\s*=\s*"[^"]+"
+**Regex:** `(?:String\s+)?password\s*=\s*"[^"]+"`
 
-Language:
-Assignments to variables named api_key, api-key, or apikey.
+**What we match:** assignments to a variable named `password` with a string literal (optional leading `String` in Java).
 
----
-
-### 4. Sensitive Print
-
-Regex:
-^\s*System\.out\.println\s*\(\s*(?:password|api[_-]?key)\s*\)\s*;?\s*$
-
-Language:
-Lines printing sensitive variables.
+**Typical example:** `password = "admin123"`
 
 ---
 
-### 5. TODO Comment
+### 3. API key in a variable
 
-Regex:
-//\s*TODO:?.*
+**Regex:** `(?:String\s+)?api[_-]?key\s*=\s*"[^"]+"`
 
-Language:
-Single-line comments indicating unfinished or unsafe code.
+**What we match:** `api_key`, `api-key`, `apikey`, etc., with a string literal.
+
+---
+
+### 4. Sensitive print
+
+**Regex:** `^\s*System\.out\.println\s*\(\s*(?:password|api[_-]?key)\s*\)\s*;?\s*$`
+
+**What we match:** lines that print `password` or the API key. Together with the previous case, that is the main story for a “strong” violation.
+
+---
+
+### 5. TODO comments
+
+**Regex:** `//\s*TODO:?.*`
+
+**Idea:** technical debt markers; sometimes harmless, sometimes “we still need to fix something risky here”.
 
 ---
 
 ### 6. Suspicious URL
 
-Regex:
-https?://(?:localhost|internal|dev|staging)[^\s"']*
+**Regex:** `https?://(?:localhost|internal|dev|staging)[^\s"']*`
 
-Language:
-URLs pointing to internal or development environments.
+**Idea:** URLs pointing at internal or dev-style hosts that should not ship to production as-is.
 
 ---
 
-### 7. Internal IP
+### 7. Private IP
 
-Regex:
-\b(?:10\.\d{1,3}\.\d{1,3}\.\d{1,3}|192\.168\.\d{1,3}\.\d{1,3}|172\.(?:1[6-9]|2\d|3[0-1])\.\d{1,3}\.\d{1,3})\b
+**Regex:** `\b(?:10\.\d{1,3}\.\d{1,3}\.\d{1,3}|192\.168\.\d{1,3}\.\d{1,3}|172\.(?:1[6-9]|2\d|3[0-1])\.\d{1,3}\.\d{1,3})\b`
 
-Language:
-Private IPv4 addresses.
+**Idea:** common private IPv4 ranges (10.x, 192.168.x, 172.16–31.x).
 
 ---
 
-## Implementation
+## Where it lives in code
 
-- detect_issues(): extracts matches
-- extract_tokens(): produces token sequence
-- classify_line(): assigns a token per line
+- `detect_issues()` — returns matches with context.  
+- `extract_tokens()` — builds the token sequence for the file.  
+- `classify_line()` — picks the label for a single line.
 
----
+Anything that does not match an “interesting” pattern effectively becomes `OTHER` for the next stage.
